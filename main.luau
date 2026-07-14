@@ -1,4 +1,4 @@
-local Veltrum = { Version = "0.1", Creator = "siv" }
+local Veltrum = { Version = "0.2", Creator = "siv" }
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -10,7 +10,11 @@ local CoreGui = (gethui and gethui()) or game:GetService("CoreGui") or Players.L
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
-local Theme = {
+-- Built-in Unload Event for external scripts to bind their cleanup logic
+local UnloadEvent = Instance.new("BindableEvent")
+Veltrum.UnloadEvent = UnloadEvent.Event
+
+local DefaultTheme = {
 	Background = Color3.fromRGB(10, 10, 10),
 	Nav = Color3.fromRGB(15, 15, 15),
 	Element = Color3.fromRGB(20, 20, 20),
@@ -29,12 +33,22 @@ local Icons = {
 	ColorWheel = "rbxassetid://1003599877"
 }
 
-local WasUpdated = false
-if getgenv().Veltrum_Instance then 
-	getgenv().Veltrum_Instance:Destroy() 
-	WasUpdated = true
+-- Cleanup previous instances safely
+function Veltrum:Unload()
+	UnloadEvent:Fire()
+	if getgenv().Veltrum_Instance then 
+		getgenv().Veltrum_Instance:Destroy() 
+		getgenv().Veltrum_Instance = nil
+	end
+	if getgenv().Veltrum_Blur then 
+		getgenv().Veltrum_Blur:Destroy() 
+		getgenv().Veltrum_Blur = nil
+	end
 end
-if getgenv().Veltrum_Blur then getgenv().Veltrum_Blur:Destroy() end
+
+if getgenv().Veltrum_Instance then 
+	Veltrum:Unload() 
+end
 
 local function GenId() return HttpService:GenerateGUID(false):gsub("-", "") end
 
@@ -44,10 +58,14 @@ local function Tween(obj, props, time, style, dir)
 	return tw
 end
 
-local function ApplyDepth(inst, color, thick)
+local function ApplyDepth(inst, strokeColor, thick, cornerRadius, gradientColors)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = cornerRadius or UDim.new(0, 4)
+	corner.Parent = inst
+
 	local stroke = Instance.new("UIStroke")
 	stroke.Name = GenId()
-	stroke.Color = color or Theme.Stroke
+	stroke.Color = strokeColor or DefaultTheme.Stroke
 	stroke.Thickness = thick or 1
 	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	stroke.Parent = inst
@@ -55,40 +73,40 @@ local function ApplyDepth(inst, color, thick)
 	local grad = Instance.new("UIGradient")
 	grad.Name = GenId()
 	grad.Rotation = 90
-	grad.Color = ColorSequence.new({
+	grad.Color = gradientColors or ColorSequence.new({
 		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
-		ColorSequenceKeypoint.new(1, Color3.new(0.5, 0.5, 0.5))
+		ColorSequenceKeypoint.new(1, Color3.new(0.6, 0.6, 0.6))
 	})
 	grad.Parent = stroke
 end
 
-local function BindFrameButton(frame, callback)
+local function BindFrameButton(frame, callback, theme)
 	frame.Active = true
 	local scale = Instance.new("UIScale", frame)
 	local hovering, pressing = false, false
 
 	frame.MouseEnter:Connect(function()
 		hovering = true
-		Tween(frame, {BackgroundColor3 = Theme.Hover}, 0.2)
+		Tween(frame, {BackgroundColor3 = theme.Hover}, 0.2)
 	end)
 	frame.MouseLeave:Connect(function()
 		hovering = false
 		if not pressing then
-			Tween(frame, {BackgroundColor3 = Theme.Element}, 0.2)
+			Tween(frame, {BackgroundColor3 = theme.Element}, 0.2)
 			Tween(scale, {Scale = 1}, 0.3, Enum.EasingStyle.Back)
 		end
 	end)
 	frame.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			pressing = true
-			Tween(frame, {BackgroundColor3 = Theme.Click}, 0.1)
+			Tween(frame, {BackgroundColor3 = theme.Click}, 0.1)
 			Tween(scale, {Scale = 0.94}, 0.2, Enum.EasingStyle.Back)
 		end
 	end)
 	frame.InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			pressing = false
-			Tween(frame, {BackgroundColor3 = hovering and Theme.Hover or Theme.Element}, 0.2)
+			Tween(frame, {BackgroundColor3 = hovering and theme.Hover or theme.Element}, 0.2)
 			Tween(scale, {Scale = 1}, 0.3, Enum.EasingStyle.Back)
 			if hovering and callback then callback() end
 		end
@@ -126,14 +144,15 @@ function Veltrum:Notify(config)
 	local text = config.Content or ""
 	local duration = config.Duration or 3
 	local img = config.Image
+	local customTheme = config.Theme or DefaultTheme
 
 	local NFrame = Instance.new("Frame")
 	NFrame.Size = UDim2.new(1, 400, 0, img and 70 or 60)
 	NFrame.BackgroundTransparency = 1
-	NFrame.BackgroundColor3 = Theme.Element
+	NFrame.BackgroundColor3 = customTheme.Element
 	NFrame.BorderSizePixel = 0
 	NFrame.Parent = NotifContainer
-	ApplyDepth(NFrame)
+	ApplyDepth(NFrame, customTheme.Stroke, 1, UDim.new(0, 6))
 	
 	local stroke = NFrame:FindFirstChildOfClass("UIStroke")
 	if stroke then stroke.Transparency = 1 end
@@ -146,7 +165,7 @@ function Veltrum:Notify(config)
 	NT.Position = UDim2.new(0, img and 60 or 10, 0, 10)
 	NT.BackgroundTransparency = 1
 	NT.Text = title
-	NT.TextColor3 = Theme.Accent
+	NT.TextColor3 = customTheme.Accent
 	NT.TextTransparency = 1
 	NT.Font = Enum.Font.GothamBold
 	NT.TextSize = 14
@@ -158,7 +177,7 @@ function Veltrum:Notify(config)
 	ND.Position = UDim2.new(0, img and 60 or 10, 0, 30)
 	ND.BackgroundTransparency = 1
 	ND.Text = text
-	ND.TextColor3 = Theme.TextDark
+	ND.TextColor3 = customTheme.TextDark
 	ND.TextTransparency = 1
 	ND.Font = Enum.Font.Gotham
 	ND.TextSize = 12
@@ -196,16 +215,11 @@ function Veltrum:Notify(config)
 	end)
 end
 
-if WasUpdated then
-	Veltrum:Notify({
-		Title = "Updating..",
-		Content = "Script to latest version",
-		Duration = 3
-	})
-end
-
 function Veltrum:CreateWindow(config)
 	local Title = config.Title or "Veltrum"
+	local Theme = config.Theme or DefaultTheme
+	local CornerRadius = config.CornerRadius or UDim.new(0, 6)
+	local CustomGradient = config.GradientColors
 	
 	local WindowObj = {
 		ToggleKey = config.ToggleKey or Enum.KeyCode.LeftShift
@@ -219,7 +233,7 @@ function Veltrum:CreateWindow(config)
 	Main.BorderSizePixel = 0
 	Main.ClipsDescendants = true
 	Main.Parent = SG
-	ApplyDepth(Main, Theme.Stroke, 1.5)
+	ApplyDepth(Main, Theme.Stroke, 1.5, CornerRadius, CustomGradient)
 
 	local Topbar = Instance.new("Frame")
 	Topbar.Size = UDim2.new(1, 0, 0, 35)
@@ -227,6 +241,7 @@ function Veltrum:CreateWindow(config)
 	Topbar.BorderSizePixel = 0
 	Topbar.Active = true
 	Topbar.Parent = Main
+	Instance.new("UICorner", Topbar).CornerRadius = CornerRadius
 
 	local drag, start, pos
 	Topbar.InputBegan:Connect(function(i)
@@ -267,9 +282,8 @@ function Veltrum:CreateWindow(config)
 	CloseImg.Parent = CloseBtn
 
 	BindFrameButton(CloseBtn, function()
-		SG:Destroy()
-		BlurEffect:Destroy()
-	end)
+		Veltrum:Unload()
+	end, Theme)
 
 	local Content = Instance.new("Frame")
 	Content.Size = UDim2.new(1, -30, 1, -110)
@@ -283,7 +297,7 @@ function Veltrum:CreateWindow(config)
 	BottomNav.BackgroundColor3 = Theme.Nav
 	BottomNav.BorderSizePixel = 0
 	BottomNav.Parent = Main
-	ApplyDepth(BottomNav, Theme.Stroke, 1)
+	ApplyDepth(BottomNav, Theme.Stroke, 1, UDim.new(0, 0))
 
 	local AvatarBtn = Instance.new("Frame")
 	AvatarBtn.Size = UDim2.new(0, 50, 0, 50)
@@ -298,6 +312,7 @@ function Veltrum:CreateWindow(config)
 	AvatarImg.BackgroundTransparency = 1
 	AvatarImg.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
 	AvatarImg.Parent = AvatarBtn
+	Instance.new("UICorner", AvatarImg).CornerRadius = UDim.new(1, 0)
 
 	local ProfilePanel = Instance.new("Frame")
 	ProfilePanel.Size = UDim2.new(0, 220, 0, 110)
@@ -306,7 +321,7 @@ function Veltrum:CreateWindow(config)
 	ProfilePanel.BorderSizePixel = 0
 	ProfilePanel.ZIndex = 10
 	ProfilePanel.Parent = Main
-	ApplyDepth(ProfilePanel, Theme.Stroke, 1)
+	ApplyDepth(ProfilePanel, Theme.Stroke, 1, CornerRadius)
 
 	local ProfName = Instance.new("TextLabel")
 	ProfName.Size = UDim2.new(1, -20, 0, 30)
@@ -332,23 +347,11 @@ function Veltrum:CreateWindow(config)
 	ProfUser.ZIndex = 10
 	ProfUser.Parent = ProfilePanel
 
-	local ProfID = Instance.new("TextLabel")
-	ProfID.Size = UDim2.new(1, -20, 0, 20)
-	ProfID.Position = UDim2.new(0, 10, 0, 65)
-	ProfID.BackgroundTransparency = 1
-	ProfID.Text = "ID: " .. LocalPlayer.UserId
-	ProfID.TextColor3 = Theme.TextDark
-	ProfID.Font = Enum.Font.Gotham
-	ProfID.TextSize = 12
-	ProfID.TextXAlignment = Enum.TextXAlignment.Left
-	ProfID.ZIndex = 10
-	ProfID.Parent = ProfilePanel
-
 	local ProfileOpen = false
 	BindFrameButton(AvatarBtn, function()
 		ProfileOpen = not ProfileOpen
 		Tween(ProfilePanel, {Position = UDim2.new(0, 10, 1, ProfileOpen and -170 or 10)}, 0.4, Enum.EasingStyle.Exponential)
-	end)
+	end, Theme)
 
 	local TabScroll = Instance.new("ScrollingFrame")
 	TabScroll.Size = UDim2.new(1, -70, 1, 0)
@@ -357,6 +360,7 @@ function Veltrum:CreateWindow(config)
 	TabScroll.BorderSizePixel = 0
 	TabScroll.ScrollBarThickness = 0
 	TabScroll.ScrollingDirection = Enum.ScrollingDirection.X
+	TabScroll.AutomaticCanvasSize = Enum.AutomaticSize.X
 	TabScroll.Parent = BottomNav
 
 	local TabListLayout = Instance.new("UIListLayout")
@@ -369,10 +373,6 @@ function Veltrum:CreateWindow(config)
 	TabPad.PaddingTop = UDim.new(0, 8)
 	TabPad.PaddingBottom = UDim.new(0, 8)
 	TabPad.Parent = TabScroll
-
-	TabListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		TabScroll.CanvasSize = UDim2.new(0, TabListLayout.AbsoluteContentSize.X, 0, 0)
-	end)
 
 	local Toggled = true
 	local DefaultFOV = Camera.FieldOfView
@@ -409,7 +409,7 @@ function Veltrum:CreateWindow(config)
 		TabBtn.BackgroundColor3 = FirstTab and Theme.Element or Theme.Nav
 		TabBtn.BorderSizePixel = 0
 		TabBtn.Parent = TabScroll
-		ApplyDepth(TabBtn, Theme.Stroke, 1)
+		ApplyDepth(TabBtn, Theme.Stroke, 1, CornerRadius)
 
 		local TabLbl = Instance.new("TextLabel")
 		TabLbl.Size = UDim2.new(1, 0, 1, 0)
@@ -427,6 +427,8 @@ function Veltrum:CreateWindow(config)
 		Page.ScrollBarThickness = 2
 		Page.ScrollBarImageColor3 = Theme.Accent
 		Page.Visible = FirstTab
+		Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		Page.CanvasSize = UDim2.new(0, 0, 0, 0) -- Handled by AutomaticCanvasSize fixing the clipping completely
 		Page.Parent = Content
 
 		local PageLayout = Instance.new("UIListLayout")
@@ -438,10 +440,6 @@ function Veltrum:CreateWindow(config)
 		PagePadding.PaddingBottom = UDim.new(0, 20)
 		PagePadding.PaddingRight = UDim.new(0, 10)
 		PagePadding.Parent = Page
-
-		PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-			Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 40)
-		end)
 
 		BindFrameButton(TabBtn, function()
 			for _, child in pairs(Content:GetChildren()) do if child:IsA("ScrollingFrame") then child.Visible = false end end
@@ -456,10 +454,55 @@ function Veltrum:CreateWindow(config)
 			Tween(Page, {Position = UDim2.new(0, 0, 0, 0)}, 0.4, Enum.EasingStyle.Exponential)
 			Tween(TabBtn, {BackgroundColor3 = Theme.Element}, 0.2)
 			Tween(TabLbl, {TextColor3 = Theme.Accent}, 0.2)
-		end)
+		end, Theme)
 
 		FirstTab = false
 		local TabElements = {}
+
+		function TabElements:CreateSection(config)
+			local sText = config.Name or "Section"
+			
+			local SecFrame = Instance.new("Frame")
+			SecFrame.Size = UDim2.new(1, 0, 0, 30)
+			SecFrame.BackgroundTransparency = 1
+			SecFrame.Parent = Page
+
+			local SecLbl = Instance.new("TextLabel")
+			SecLbl.Size = UDim2.new(1, 0, 1, 0)
+			SecLbl.BackgroundTransparency = 1
+			SecLbl.Text = sText
+			SecLbl.TextColor3 = Theme.Accent
+			SecLbl.Font = Enum.Font.GothamBold
+			SecLbl.TextSize = 14
+			SecLbl.TextXAlignment = Enum.TextXAlignment.Left
+			SecLbl.Parent = SecFrame
+
+			local Divider = Instance.new("Frame")
+			Divider.Size = UDim2.new(1, 0, 0, 2)
+			Divider.Position = UDim2.new(0, 0, 1, -2)
+			Divider.BackgroundColor3 = Theme.Stroke
+			Divider.BorderSizePixel = 0
+			Divider.Parent = SecFrame
+		end
+
+		function TabElements:CreateLabel(config)
+			local lText = config.Name or "Label"
+			
+			local LblFrame = Instance.new("Frame")
+			LblFrame.Size = UDim2.new(1, 0, 0, 25)
+			LblFrame.BackgroundTransparency = 1
+			LblFrame.Parent = Page
+
+			local LblText = Instance.new("TextLabel")
+			LblText.Size = UDim2.new(1, 0, 1, 0)
+			LblText.BackgroundTransparency = 1
+			LblText.Text = lText
+			LblText.TextColor3 = Theme.TextDark
+			LblText.Font = Enum.Font.Gotham
+			LblText.TextSize = 13
+			LblText.TextXAlignment = Enum.TextXAlignment.Left
+			LblText.Parent = LblFrame
+		end
 
 		function TabElements:CreateButton(config)
 			local btnText = config.Name or "Button"
@@ -470,7 +513,7 @@ function Veltrum:CreateWindow(config)
 			BtnFrame.BackgroundColor3 = Theme.Element
 			BtnFrame.BorderSizePixel = 0
 			BtnFrame.Parent = Page
-			ApplyDepth(BtnFrame)
+			ApplyDepth(BtnFrame, Theme.Stroke, 1, CornerRadius)
 
 			local BtnLbl = Instance.new("TextLabel")
 			BtnLbl.Size = UDim2.new(1, 0, 1, 0)
@@ -481,7 +524,7 @@ function Veltrum:CreateWindow(config)
 			BtnLbl.TextSize = 13
 			BtnLbl.Parent = BtnFrame
 
-			BindFrameButton(BtnFrame, cb)
+			BindFrameButton(BtnFrame, cb, Theme)
 		end
 
 		function TabElements:CreateToggle(config)
@@ -495,7 +538,7 @@ function Veltrum:CreateWindow(config)
 			TogFrame.BackgroundColor3 = Theme.Element
 			TogFrame.BorderSizePixel = 0
 			TogFrame.Parent = Page
-			ApplyDepth(TogFrame)
+			ApplyDepth(TogFrame, Theme.Stroke, 1, CornerRadius)
 
 			local TogLbl = Instance.new("TextLabel")
 			TogLbl.Size = UDim2.new(1, -60, 1, 0)
@@ -515,7 +558,7 @@ function Veltrum:CreateWindow(config)
 				SwitchBg.BackgroundColor3 = state and Theme.Accent or Theme.Background
 				SwitchBg.BorderSizePixel = 0
 				SwitchBg.Parent = TogFrame
-				ApplyDepth(SwitchBg)
+				ApplyDepth(SwitchBg, Theme.Stroke, 1, UDim.new(1,0))
 
 				local SwitchBlock = Instance.new("Frame")
 				SwitchBlock.Size = UDim2.new(0, 16, 0, 16)
@@ -523,6 +566,7 @@ function Veltrum:CreateWindow(config)
 				SwitchBlock.BackgroundColor3 = state and Theme.Background or Theme.TextDark
 				SwitchBlock.BorderSizePixel = 0
 				SwitchBlock.Parent = SwitchBg
+				Instance.new("UICorner", SwitchBlock).CornerRadius = UDim.new(1, 0)
 
 				BindFrameButton(TogFrame, function()
 					state = not state
@@ -532,7 +576,7 @@ function Veltrum:CreateWindow(config)
 						BackgroundColor3 = state and Theme.Background or Theme.TextDark
 					}, 0.4, Enum.EasingStyle.Exponential)
 					cb(state)
-				end)
+				end, Theme)
 
 			elseif togType == "Checkbox" then
 				local CheckBox = Instance.new("ImageLabel")
@@ -551,7 +595,7 @@ function Veltrum:CreateWindow(config)
 					scale.Scale = 0.6
 					Tween(scale, {Scale = 1}, 0.3, Enum.EasingStyle.Back)
 					cb(state)
-				end)
+				end, Theme)
 			end
 		end
 
@@ -567,7 +611,7 @@ function Veltrum:CreateWindow(config)
 			SliderFrame.BackgroundColor3 = Theme.Element
 			SliderFrame.BorderSizePixel = 0
 			SliderFrame.Parent = Page
-			ApplyDepth(SliderFrame)
+			ApplyDepth(SliderFrame, Theme.Stroke, 1, CornerRadius)
 
 			local Lbl = Instance.new("TextLabel")
 			Lbl.Size = UDim2.new(1, -30, 0, 30)
@@ -598,6 +642,7 @@ function Veltrum:CreateWindow(config)
 			BarBg.BorderSizePixel = 0
 			BarBg.Active = true
 			BarBg.Parent = SliderFrame
+			Instance.new("UICorner", BarBg).CornerRadius = UDim.new(1, 0)
 
 			local BarFill = Instance.new("Frame")
 			local pct = (default - min) / (max - min)
@@ -605,7 +650,16 @@ function Veltrum:CreateWindow(config)
 			BarFill.BackgroundColor3 = Theme.Accent
 			BarFill.BorderSizePixel = 0
 			BarFill.Parent = BarBg
-			ApplyDepth(BarFill, Color3.new(1,1,1), 0)
+			Instance.new("UICorner", BarFill).CornerRadius = UDim.new(1, 0)
+			
+			-- Gradient representation for sliders
+			local gradient = Instance.new("UIGradient")
+			gradient.Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+				ColorSequenceKeypoint.new(1, Color3.new(0.6, 0.6, 0.6))
+			})
+			gradient.Rotation = 90
+			gradient.Parent = BarFill
 
 			local dragging = false
 			local function update(input)
@@ -628,6 +682,103 @@ function Veltrum:CreateWindow(config)
 				if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then update(i) end
 			end)
 		end
+		
+		function TabElements:CreateTextBox(config)
+			local tbName = config.Name or "TextBox"
+			local placeholder = config.Placeholder or "Enter text..."
+			local cb = config.Callback or function() end
+
+			local TBFrame = Instance.new("Frame")
+			TBFrame.Size = UDim2.new(1, 0, 0, 42)
+			TBFrame.BackgroundColor3 = Theme.Element
+			TBFrame.BorderSizePixel = 0
+			TBFrame.Parent = Page
+			ApplyDepth(TBFrame, Theme.Stroke, 1, CornerRadius)
+
+			local TBLbl = Instance.new("TextLabel")
+			TBLbl.Size = UDim2.new(1, -120, 1, 0)
+			TBLbl.Position = UDim2.new(0, 15, 0, 0)
+			TBLbl.BackgroundTransparency = 1
+			TBLbl.Text = tbName
+			TBLbl.TextColor3 = Theme.Text
+			TBLbl.TextXAlignment = Enum.TextXAlignment.Left
+			TBLbl.Font = Enum.Font.Gotham
+			TBLbl.TextSize = 13
+			TBLbl.Parent = TBFrame
+
+			local TextBox = Instance.new("TextBox")
+			TextBox.Size = UDim2.new(0, 120, 0, 30)
+			TextBox.Position = UDim2.new(1, -130, 0.5, -15)
+			TextBox.BackgroundColor3 = Theme.Background
+			TextBox.BorderSizePixel = 0
+			TextBox.Text = ""
+			TextBox.PlaceholderText = placeholder
+			TextBox.TextColor3 = Theme.Text
+			TextBox.Font = Enum.Font.Gotham
+			TextBox.TextSize = 12
+			TextBox.Parent = TBFrame
+			ApplyDepth(TextBox, Theme.Stroke, 1, UDim.new(0, 4))
+
+			TextBox.FocusLost:Connect(function(enterPressed)
+				cb(TextBox.Text)
+			end)
+		end
+		
+		function TabElements:CreateKeybind(config)
+			local kName = config.Name or "Keybind"
+			local defaultKey = config.Default or Enum.KeyCode.E
+			local cb = config.Callback or function() end
+
+			local KeyFrame = Instance.new("Frame")
+			KeyFrame.Size = UDim2.new(1, 0, 0, 42)
+			KeyFrame.BackgroundColor3 = Theme.Element
+			KeyFrame.BorderSizePixel = 0
+			KeyFrame.Parent = Page
+			ApplyDepth(KeyFrame, Theme.Stroke, 1, CornerRadius)
+
+			local KeyLbl = Instance.new("TextLabel")
+			KeyLbl.Size = UDim2.new(1, -100, 1, 0)
+			KeyLbl.Position = UDim2.new(0, 15, 0, 0)
+			KeyLbl.BackgroundTransparency = 1
+			KeyLbl.Text = kName
+			KeyLbl.TextColor3 = Theme.Text
+			KeyLbl.TextXAlignment = Enum.TextXAlignment.Left
+			KeyLbl.Font = Enum.Font.Gotham
+			KeyLbl.TextSize = 13
+			KeyLbl.Parent = KeyFrame
+
+			local KeyBtn = Instance.new("TextLabel")
+			KeyBtn.Size = UDim2.new(0, 70, 0, 24)
+			KeyBtn.Position = UDim2.new(1, -85, 0.5, -12)
+			KeyBtn.BackgroundColor3 = Theme.Background
+			KeyBtn.BorderSizePixel = 0
+			KeyBtn.Text = defaultKey.Name
+			KeyBtn.TextColor3 = Theme.Accent
+			KeyBtn.Font = Enum.Font.GothamBold
+			KeyBtn.TextSize = 12
+			KeyBtn.Parent = KeyFrame
+			ApplyDepth(KeyBtn, Theme.Stroke, 1, UDim.new(0, 4))
+
+			local listening = false
+			BindFrameButton(KeyFrame, function()
+				listening = true
+				KeyBtn.Text = "..."
+				Tween(KeyBtn, {TextColor3 = Theme.TextDark}, 0.2)
+			end, Theme)
+
+			UserInputService.InputBegan:Connect(function(input, gpe)
+				if listening then
+					if input.KeyCode ~= Enum.KeyCode.Unknown then
+						defaultKey = input.KeyCode
+						KeyBtn.Text = defaultKey.Name
+						listening = false
+						Tween(KeyBtn, {TextColor3 = Theme.Accent}, 0.2)
+					end
+				elseif not gpe and input.KeyCode == defaultKey then
+					cb()
+				end
+			end)
+		end
 
 		function TabElements:CreateDropdown(config)
 			local dName = config.Name or "Dropdown"
@@ -640,7 +791,7 @@ function Veltrum:CreateWindow(config)
 			DropFrame.BorderSizePixel = 0
 			DropFrame.ClipsDescendants = true
 			DropFrame.Parent = Page
-			ApplyDepth(DropFrame)
+			ApplyDepth(DropFrame, Theme.Stroke, 1, CornerRadius)
 
 			local DropBtn = Instance.new("Frame")
 			DropBtn.Size = UDim2.new(1, 0, 0, 42)
@@ -679,7 +830,7 @@ function Veltrum:CreateWindow(config)
 				Tween(Arrow, {Rotation = open and 45 or 0}, 0.3, Enum.EasingStyle.Back)
 				local goalSize = open and 42 + (#opts * 34) or 42
 				Tween(DropFrame, {Size = UDim2.new(1, 0, 0, goalSize)}, 0.4, Enum.EasingStyle.Exponential)
-			end)
+			end, Theme)
 
 			for i, opt in ipairs(opts) do
 				local OptBtn = Instance.new("Frame")
@@ -706,7 +857,7 @@ function Veltrum:CreateWindow(config)
 					Tween(Arrow, {Rotation = 0}, 0.3, Enum.EasingStyle.Back)
 					Tween(DropFrame, {Size = UDim2.new(1, 0, 0, 42)}, 0.4, Enum.EasingStyle.Exponential)
 					cb(opt)
-				end)
+				end, Theme)
 			end
 		end
 
@@ -716,11 +867,11 @@ function Veltrum:CreateWindow(config)
 			local default = config.Default or Color3.new(1, 1, 1)
 
 			local CPFrame = Instance.new("Frame")
-			CPFrame.Size = UDim2.new(1, 0, 0, 110)
+			CPFrame.Size = UDim2.new(1, 0, 0, 150)
 			CPFrame.BackgroundColor3 = Theme.Element
 			CPFrame.BorderSizePixel = 0
 			CPFrame.Parent = Page
-			ApplyDepth(CPFrame)
+			ApplyDepth(CPFrame, Theme.Stroke, 1, CornerRadius)
 
 			local CPLbl = Instance.new("TextLabel")
 			CPLbl.Size = UDim2.new(1, -120, 0, 30)
@@ -739,11 +890,22 @@ function Veltrum:CreateWindow(config)
 			Preview.BackgroundColor3 = default
 			Preview.BorderSizePixel = 0
 			Preview.Parent = CPFrame
-			ApplyDepth(Preview)
+			ApplyDepth(Preview, Theme.Stroke, 1, UDim.new(0,4))
+			
+			local RGBLbl = Instance.new("TextLabel")
+			RGBLbl.Size = UDim2.new(0, 100, 0, 20)
+			RGBLbl.Position = UDim2.new(0, 15, 0, 100)
+			RGBLbl.BackgroundTransparency = 1
+			RGBLbl.Text = math.floor(default.R*255)..", "..math.floor(default.G*255)..", "..math.floor(default.B*255)
+			RGBLbl.TextColor3 = Theme.TextDark
+			RGBLbl.TextXAlignment = Enum.TextXAlignment.Left
+			RGBLbl.Font = Enum.Font.Gotham
+			RGBLbl.TextSize = 11
+			RGBLbl.Parent = CPFrame
 
 			local Wheel = Instance.new("ImageLabel")
 			Wheel.Size = UDim2.new(0, 90, 0, 90)
-			Wheel.Position = UDim2.new(1, -105, 0, 10)
+			Wheel.Position = UDim2.new(1, -115, 0, 10)
 			Wheel.BackgroundTransparency = 1
 			Wheel.Image = Icons.ColorWheel
 			Wheel.Active = true
@@ -755,39 +917,85 @@ function Veltrum:CreateWindow(config)
 			Indicator.BackgroundColor3 = Color3.new(1,1,1)
 			Indicator.BorderSizePixel = 0
 			Indicator.Parent = Wheel
-			ApplyDepth(Indicator, Color3.new(0,0,0), 1)
-			Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1,0)
+			ApplyDepth(Indicator, Color3.new(0,0,0), 1, UDim.new(1,0))
 
-			local dragging = false
-			local function updateColor(input)
+			local ValSliderBg = Instance.new("Frame")
+			ValSliderBg.Size = UDim2.new(0, 90, 0, 12)
+			ValSliderBg.Position = UDim2.new(1, -115, 0, 115)
+			ValSliderBg.BackgroundColor3 = Theme.Background
+			ValSliderBg.BorderSizePixel = 0
+			ValSliderBg.Active = true
+			ValSliderBg.Parent = CPFrame
+			ApplyDepth(ValSliderBg, Theme.Stroke, 1, UDim.new(1,0))
+			
+			local ValUIGradient = Instance.new("UIGradient")
+			ValUIGradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.new(0,0,0)), ColorSequenceKeypoint.new(1, default)})
+			ValUIGradient.Parent = ValSliderBg
+
+			local ValIndicator = Instance.new("Frame")
+			ValIndicator.Size = UDim2.new(0, 14, 0, 14)
+			ValIndicator.Position = UDim2.new(1, -7, 0.5, -7)
+			ValIndicator.BackgroundColor3 = Theme.Accent
+			ValIndicator.BorderSizePixel = 0
+			ValIndicator.Parent = ValSliderBg
+			ApplyDepth(ValIndicator, Color3.new(0,0,0), 1, UDim.new(1,0))
+
+			local hue, sat, val = default:ToHSV()
+			
+			local function updateVisuals()
+				local color = Color3.fromHSV(hue, sat, val)
+				local pureColor = Color3.fromHSV(hue, sat, 1)
+				Preview.BackgroundColor3 = color
+				RGBLbl.Text = "RGB: " .. math.floor(color.R*255)..", "..math.floor(color.G*255)..", "..math.floor(color.B*255)
+				ValUIGradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.new(0,0,0)), ColorSequenceKeypoint.new(1, pureColor)})
+				cb(color)
+			end
+
+			local draggingWheel = false
+			local function updateWheel(input)
 				local center = Wheel.AbsolutePosition + (Wheel.AbsoluteSize / 2)
 				local delta = Vector2.new(input.Position.X - center.X, input.Position.Y - center.Y)
 				local radius = Wheel.AbsoluteSize.X / 2
 				local distance = math.clamp(delta.Magnitude, 0, radius)
 				
 				local angle = math.atan2(delta.Y, delta.X)
-				local hue = (angle / (math.pi * 2)) % 1
-				local sat = distance / radius
-				local color = Color3.fromHSV(hue, sat, 1)
+				hue = (angle / (math.pi * 2)) % 1
+				sat = distance / radius
 
 				local indX = math.cos(angle) * distance
 				local indY = math.sin(angle) * distance
 				Tween(Indicator, {Position = UDim2.new(0.5, indX - 5, 0.5, indY - 5)}, 0.1, Enum.EasingStyle.Quad)
-				
-				Preview.BackgroundColor3 = color
-				cb(color)
+				updateVisuals()
+			end
+
+			local draggingVal = false
+			local function updateValue(input)
+				local pos = math.clamp((input.Position.X - ValSliderBg.AbsolutePosition.X) / ValSliderBg.AbsoluteSize.X, 0, 1)
+				val = pos
+				Tween(ValIndicator, {Position = UDim2.new(pos, -7, 0.5, -7)}, 0.1, Enum.EasingStyle.Quad)
+				updateVisuals()
 			end
 
 			Wheel.InputBegan:Connect(function(i)
 				if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-					dragging = true updateColor(i)
+					draggingWheel = true updateWheel(i)
+				end
+			end)
+			ValSliderBg.InputBegan:Connect(function(i)
+				if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+					draggingVal = true updateValue(i)
 				end
 			end)
 			UserInputService.InputEnded:Connect(function(i)
-				if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = false end
+				if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then 
+					draggingWheel = false draggingVal = false
+				end
 			end)
 			UserInputService.InputChanged:Connect(function(i)
-				if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then updateColor(i) end
+				if (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then 
+					if draggingWheel then updateWheel(i) end
+					if draggingVal then updateValue(i) end
+				end
 			end)
 		end
 
