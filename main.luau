@@ -1,4 +1,5 @@
 local Veltrum = { Version = "0.3", Creator = "siv" }
+local CustomFont = Font.fromId(12187606624, Enum.FontWeight.Regular, Enum.FontStyle.Normal)
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -193,7 +194,7 @@ function Veltrum:Notify(config)
 	NT.Text = title
 	NT.TextColor3 = customTheme.Accent
 	NT.TextTransparency = 1
-	NT.Font = Enum.Font.PTSerif
+	NT.Font = CustomFont
 	NT.TextSize = 14
 	NT.TextXAlignment = Enum.TextXAlignment.Left
 	NT.Parent = NFrame
@@ -205,7 +206,7 @@ function Veltrum:Notify(config)
 	ND.Text = text
 	ND.TextColor3 = customTheme.TextDark
 	ND.TextTransparency = 1
-	ND.Font = Enum.Font.PTSerif
+	ND.Font = CustomFont
 	ND.TextSize = 12
 	ND.TextWrapped = true
 	ND.TextXAlignment = Enum.TextXAlignment.Left
@@ -284,7 +285,7 @@ function Veltrum:CreateWindow(config)
 	TitleLbl.BackgroundTransparency = 1
 	TitleLbl.Text = Title
 	TitleLbl.TextColor3 = Theme.Text
-	TitleLbl.Font = Enum.Font.PTSerif
+	TitleLbl.Font = CustomFont
 	TitleLbl.TextSize = 14
 	TitleLbl.TextXAlignment = Enum.TextXAlignment.Left
 	TitleLbl.Parent = Topbar
@@ -352,7 +353,7 @@ function Veltrum:CreateWindow(config)
 	ProfName.BackgroundTransparency = 1
 	ProfName.Text = LocalPlayer.DisplayName
 	ProfName.TextColor3 = Theme.Accent
-	ProfName.Font = Enum.Font.PTSerif
+	ProfName.Font = CustomFont
 	ProfName.TextSize = 16
 	ProfName.TextXAlignment = Enum.TextXAlignment.Left
 	ProfName.ZIndex = 10
@@ -364,7 +365,7 @@ function Veltrum:CreateWindow(config)
 	ProfUser.BackgroundTransparency = 1
 	ProfUser.Text = "@" .. LocalPlayer.Name
 	ProfUser.TextColor3 = Theme.TextDark
-	ProfUser.Font = Enum.Font.PTSerif
+	ProfUser.Font = CustomFont
 	ProfUser.TextSize = 12
 	ProfUser.TextXAlignment = Enum.TextXAlignment.Left
 	ProfUser.ZIndex = 10
@@ -439,7 +440,7 @@ function Veltrum:CreateWindow(config)
 		TabLbl.BackgroundTransparency = 1
 		TabLbl.Text = tabName
 		TabLbl.TextColor3 = FirstTab and Theme.Accent or Theme.TextDark
-		TabLbl.Font = Enum.Font.PTSerif
+		TabLbl.Font = CustomFont
 		TabLbl.TextSize = 13
 		TabLbl.Parent = TabBtn
 
@@ -497,7 +498,7 @@ function Veltrum:CreateWindow(config)
 			SecLbl.BackgroundTransparency = 1
 			SecLbl.Text = sText
 			SecLbl.TextColor3 = Theme.Accent
-			SecLbl.Font = Enum.Font.PTSerif
+			SecLbl.Font = CustomFont
 			SecLbl.TextSize = 15
 			SecLbl.TextXAlignment = Enum.TextXAlignment.Left
 			SecLbl.Parent = SecFrame
@@ -522,7 +523,7 @@ function Veltrum:CreateWindow(config)
 			LblText.BackgroundTransparency = 1
 			LblText.Text = lText
 			LblText.TextColor3 = Theme.TextDark
-			LblText.Font = Enum.Font.PTSerif
+			LblText.Font = CustomFont
 			LblText.TextSize = 13
 			LblText.TextXAlignment = Enum.TextXAlignment.Left
 			LblText.Parent = LblFrame
@@ -558,7 +559,7 @@ function Veltrum:CreateWindow(config)
 			TitleLbl.Text = pName
 			TitleLbl.TextColor3 = Theme.Accent
 			TitleLbl.TextXAlignment = Enum.TextXAlignment.Left
-			TitleLbl.Font = Enum.Font.PTSerif
+			TitleLbl.Font = CustomFont
 			TitleLbl.TextSize = 14
 			TitleLbl.Parent = PFrame
 
@@ -571,7 +572,7 @@ function Veltrum:CreateWindow(config)
 			ContentLbl.TextXAlignment = Enum.TextXAlignment.Left
 			ContentLbl.TextYAlignment = Enum.TextYAlignment.Top
 			ContentLbl.TextWrapped = true
-			ContentLbl.Font = Enum.Font.PTSerif
+			ContentLbl.Font = CustomFont
 			ContentLbl.TextSize = 13
 			ContentLbl.Parent = PFrame
 		end
@@ -592,7 +593,7 @@ function Veltrum:CreateWindow(config)
 			BtnLbl.BackgroundTransparency = 1
 			BtnLbl.Text = btnText
 			BtnLbl.TextColor3 = Theme.Text
-			BtnLbl.Font = Enum.Font.PTSerif
+			BtnLbl.Font = CustomFont
 			BtnLbl.TextSize = 13
 			BtnLbl.Parent = BtnFrame
 
@@ -619,7 +620,7 @@ function Veltrum:CreateWindow(config)
 			TogLbl.Text = togText
 			TogLbl.TextColor3 = Theme.Text
 			TogLbl.TextXAlignment = Enum.TextXAlignment.Left
-			TogLbl.Font = Enum.Font.PTSerif
+			TogLbl.Font = CustomFont
 			TogLbl.TextSize = 13
 			TogLbl.Parent = TogFrame
 
@@ -688,7 +689,7 @@ function Veltrum:CreateWindow(config)
 			Lbl.Text = sName
 			Lbl.TextColor3 = Theme.Text
 			Lbl.TextXAlignment = Enum.TextXAlignment.Left
-			Lbl.Font = Enum.Font.PTSerif
+			Lbl.Font = CustomFont
 			Lbl.TextSize = 13
 			Lbl.Parent = SliderFrame
 
@@ -699,7 +700,7 @@ function Veltrum:CreateWindow(config)
 			ValLbl.Text = tostring(default)
 			ValLbl.TextColor3 = Theme.TextDark
 			ValLbl.TextXAlignment = Enum.TextXAlignment.Right
-			ValLbl.Font = Enum.Font.PTSerif
+			ValLbl.Font = CustomFont
 			ValLbl.TextSize = 13
 			ValLbl.Parent = SliderFrame
 
@@ -767,7 +768,7 @@ function Veltrum:CreateWindow(config)
 			TBLbl.Text = tbName
 			TBLbl.TextColor3 = Theme.Text
 			TBLbl.TextXAlignment = Enum.TextXAlignment.Left
-			TBLbl.Font = Enum.Font.PTSerif
+			TBLbl.Font = CustomFont
 			TBLbl.TextSize = 13
 			TBLbl.Parent = TBFrame
 
@@ -779,7 +780,7 @@ function Veltrum:CreateWindow(config)
 			TextBox.Text = ""
 			TextBox.PlaceholderText = placeholder
 			TextBox.TextColor3 = Theme.Text
-			TextBox.Font = Enum.Font.PTSerif
+			TextBox.Font = CustomFont
 			TextBox.TextSize = 12
 			TextBox.Parent = TBFrame
 			ApplyDepth(TextBox, Theme.Stroke, 1)
@@ -808,7 +809,7 @@ function Veltrum:CreateWindow(config)
 			KeyLbl.Text = kName
 			KeyLbl.TextColor3 = Theme.Text
 			KeyLbl.TextXAlignment = Enum.TextXAlignment.Left
-			KeyLbl.Font = Enum.Font.PTSerif
+			KeyLbl.Font = CustomFont
 			KeyLbl.TextSize = 13
 			KeyLbl.Parent = KeyFrame
 
@@ -819,7 +820,7 @@ function Veltrum:CreateWindow(config)
 			KeyBtn.BorderSizePixel = 0
 			KeyBtn.Text = defaultKey.Name
 			KeyBtn.TextColor3 = Theme.Accent
-			KeyBtn.Font = Enum.Font.PTSerif
+			KeyBtn.Font = CustomFont
 			KeyBtn.TextSize = 12
 			KeyBtn.Parent = KeyFrame
 			ApplyDepth(KeyBtn, Theme.Stroke, 1)
@@ -871,7 +872,7 @@ function Veltrum:CreateWindow(config)
 			DropLbl.Text = dName
 			DropLbl.TextColor3 = Theme.Text
 			DropLbl.TextXAlignment = Enum.TextXAlignment.Left
-			DropLbl.Font = Enum.Font.PTSerif
+			DropLbl.Font = CustomFont
 			DropLbl.TextSize = 13
 			DropLbl.Parent = DropBtn
 
@@ -881,7 +882,7 @@ function Veltrum:CreateWindow(config)
 			Arrow.BackgroundTransparency = 1
 			Arrow.Text = "+"
 			Arrow.TextColor3 = Theme.TextDark
-			Arrow.Font = Enum.Font.PTSerif
+			Arrow.Font = CustomFont
 			Arrow.TextSize = 16
 			Arrow.Parent = DropBtn
 
@@ -912,7 +913,7 @@ function Veltrum:CreateWindow(config)
 				OptLbl.Text = opt
 				OptLbl.TextColor3 = Theme.TextDark
 				OptLbl.TextXAlignment = Enum.TextXAlignment.Left
-				OptLbl.Font = Enum.Font.PTSerif
+				OptLbl.Font = CustomFont
 				OptLbl.TextSize = 12
 				OptLbl.Parent = OptBtn
 
@@ -945,7 +946,7 @@ function Veltrum:CreateWindow(config)
 			CPLbl.Text = cpName
 			CPLbl.TextColor3 = Theme.Text
 			CPLbl.TextXAlignment = Enum.TextXAlignment.Left
-			CPLbl.Font = Enum.Font.PTSerif
+			CPLbl.Font = CustomFont
 			CPLbl.TextSize = 13
 			CPLbl.Parent = CPFrame
 
@@ -964,7 +965,7 @@ function Veltrum:CreateWindow(config)
 			RGBLbl.Text = "RGB: "..math.floor(default.R*255)..", "..math.floor(default.G*255)..", "..math.floor(default.B*255)
 			RGBLbl.TextColor3 = Theme.TextDark
 			RGBLbl.TextXAlignment = Enum.TextXAlignment.Left
-			RGBLbl.Font = Enum.Font.PTSerif
+			RGBLbl.Font = CustomFont
 			RGBLbl.TextSize = 11
 			RGBLbl.Parent = CPFrame
 
