@@ -23,11 +23,18 @@ local Theme = {
 }
 
 local Icons = {
-	Close = "rbxassetid://4458805218",
-	CheckboxOff = "rbxassetid://4458801920",
-	CheckboxOn = "rbxassetid://4458804273",
+	Close = "rbxassetid://4458805208",
+	CheckboxOff = "rbxassetid://4458801905",
+	CheckboxOn = "rbxassetid://4458804262",
 	ColorWheel = "rbxassetid://1003599877"
 }
+
+local WasUpdated = false
+if getgenv().Veltrum_Instance then 
+	getgenv().Veltrum_Instance:Destroy() 
+	WasUpdated = true
+end
+if getgenv().Veltrum_Blur then getgenv().Veltrum_Blur:Destroy() end
 
 local function GenId() return HttpService:GenerateGUID(false):gsub("-", "") end
 
@@ -88,9 +95,6 @@ local function BindFrameButton(frame, callback)
 	end)
 end
 
-if getgenv().Veltrum_Instance then getgenv().Veltrum_Instance:Destroy() end
-if getgenv().Veltrum_Blur then getgenv().Veltrum_Blur:Destroy() end
-
 local SG = Instance.new("ScreenGui")
 SG.Name = GenId()
 SG.ResetOnSpawn = false
@@ -130,6 +134,9 @@ function Veltrum:Notify(config)
 	NFrame.BorderSizePixel = 0
 	NFrame.Parent = NotifContainer
 	ApplyDepth(NFrame)
+	
+	local stroke = NFrame:FindFirstChildOfClass("UIStroke")
+	if stroke then stroke.Transparency = 1 end
 
 	local NScale = Instance.new("UIScale", NFrame)
 	NScale.Scale = 0.8
@@ -175,6 +182,7 @@ function Veltrum:Notify(config)
 	Tween(NScale, {Scale = 1}, 0.5, Enum.EasingStyle.Back)
 	Tween(NT, {TextTransparency = 0}, 0.5)
 	Tween(ND, {TextTransparency = 0}, 0.5)
+	if stroke then Tween(stroke, {Transparency = 0}, 0.5) end
 
 	task.spawn(function()
 		task.wait(duration)
@@ -182,14 +190,26 @@ function Veltrum:Notify(config)
 		Tween(NT, {TextTransparency = 1}, 0.4)
 		Tween(ND, {TextTransparency = 1}, 0.4)
 		if img then Tween(NFrame:FindFirstChildOfClass("ImageLabel"), {ImageTransparency = 1}, 0.4) end
+		if stroke then Tween(stroke, {Transparency = 1}, 0.4) end
 		task.wait(0.5)
 		NFrame:Destroy()
 	end)
 end
 
+if WasUpdated then
+	Veltrum:Notify({
+		Title = "Updating..",
+		Content = "Script to latest version",
+		Duration = 3
+	})
+end
+
 function Veltrum:CreateWindow(config)
 	local Title = config.Title or "Veltrum"
-	local ToggleKey = config.ToggleKey or Enum.KeyCode.LeftShift
+	
+	local WindowObj = {
+		ToggleKey = config.ToggleKey or Enum.KeyCode.LeftShift
+	}
 
 	local Main = Instance.new("Frame")
 	Main.Name = GenId()
@@ -267,6 +287,7 @@ function Veltrum:CreateWindow(config)
 
 	local AvatarBtn = Instance.new("Frame")
 	AvatarBtn.Size = UDim2.new(0, 50, 0, 50)
+	AvatarBtn.Position = UDim2.new(0, 10, 0, 0)
 	AvatarBtn.BackgroundColor3 = Theme.Nav
 	AvatarBtn.BorderSizePixel = 0
 	AvatarBtn.Parent = BottomNav
@@ -330,8 +351,8 @@ function Veltrum:CreateWindow(config)
 	end)
 
 	local TabScroll = Instance.new("ScrollingFrame")
-	TabScroll.Size = UDim2.new(1, -60, 1, 0)
-	TabScroll.Position = UDim2.new(0, 60, 0, 0)
+	TabScroll.Size = UDim2.new(1, -70, 1, 0)
+	TabScroll.Position = UDim2.new(0, 70, 0, 0)
 	TabScroll.BackgroundTransparency = 1
 	TabScroll.BorderSizePixel = 0
 	TabScroll.ScrollBarThickness = 0
@@ -377,10 +398,9 @@ function Veltrum:CreateWindow(config)
 
 	UserInputService.InputBegan:Connect(function(input, gpe)
 		if gpe then return end
-		if input.KeyCode == ToggleKey then ToggleUI() end
+		if input.KeyCode == WindowObj.ToggleKey then ToggleUI() end
 	end)
 
-	local WindowObj = {}
 	local FirstTab = true
 
 	function WindowObj:CreateTab(tabName)
@@ -625,6 +645,7 @@ function Veltrum:CreateWindow(config)
 			local DropBtn = Instance.new("Frame")
 			DropBtn.Size = UDim2.new(1, 0, 0, 42)
 			DropBtn.BackgroundTransparency = 1
+			DropBtn.LayoutOrder = 0
 			DropBtn.Parent = DropFrame
 
 			local DropLbl = Instance.new("TextLabel")
@@ -652,10 +673,6 @@ function Veltrum:CreateWindow(config)
 			OptLayout.SortOrder = Enum.SortOrder.LayoutOrder
 			OptLayout.Parent = DropFrame
 
-			local Pad = Instance.new("UIPadding")
-			Pad.PaddingTop = UDim.new(0, 42)
-			Pad.Parent = DropFrame
-
 			local open = false
 			BindFrameButton(DropBtn, function()
 				open = not open
@@ -664,11 +681,12 @@ function Veltrum:CreateWindow(config)
 				Tween(DropFrame, {Size = UDim2.new(1, 0, 0, goalSize)}, 0.4, Enum.EasingStyle.Exponential)
 			end)
 
-			for _, opt in ipairs(opts) do
+			for i, opt in ipairs(opts) do
 				local OptBtn = Instance.new("Frame")
 				OptBtn.Size = UDim2.new(1, 0, 0, 34)
 				OptBtn.BackgroundColor3 = Theme.Element
 				OptBtn.BorderSizePixel = 0
+				OptBtn.LayoutOrder = i
 				OptBtn.Parent = DropFrame
 
 				local OptLbl = Instance.new("TextLabel")
@@ -698,15 +716,15 @@ function Veltrum:CreateWindow(config)
 			local default = config.Default or Color3.new(1, 1, 1)
 
 			local CPFrame = Instance.new("Frame")
-			CPFrame.Size = UDim2.new(1, 0, 0, 180)
+			CPFrame.Size = UDim2.new(1, 0, 0, 110)
 			CPFrame.BackgroundColor3 = Theme.Element
 			CPFrame.BorderSizePixel = 0
 			CPFrame.Parent = Page
 			ApplyDepth(CPFrame)
 
 			local CPLbl = Instance.new("TextLabel")
-			CPLbl.Size = UDim2.new(1, -30, 0, 30)
-			CPLbl.Position = UDim2.new(0, 15, 0, 5)
+			CPLbl.Size = UDim2.new(1, -120, 0, 30)
+			CPLbl.Position = UDim2.new(0, 15, 0, 15)
 			CPLbl.BackgroundTransparency = 1
 			CPLbl.Text = cpName
 			CPLbl.TextColor3 = Theme.Text
@@ -716,16 +734,16 @@ function Veltrum:CreateWindow(config)
 			CPLbl.Parent = CPFrame
 
 			local Preview = Instance.new("Frame")
-			Preview.Size = UDim2.new(0, 30, 0, 15)
-			Preview.Position = UDim2.new(1, -45, 0, 12)
+			Preview.Size = UDim2.new(0, 40, 0, 40)
+			Preview.Position = UDim2.new(0, 15, 0, 50)
 			Preview.BackgroundColor3 = default
 			Preview.BorderSizePixel = 0
 			Preview.Parent = CPFrame
 			ApplyDepth(Preview)
 
 			local Wheel = Instance.new("ImageLabel")
-			Wheel.Size = UDim2.new(0, 120, 0, 120)
-			Wheel.Position = UDim2.new(0.5, -60, 0, 45)
+			Wheel.Size = UDim2.new(0, 90, 0, 90)
+			Wheel.Position = UDim2.new(1, -105, 0, 10)
 			Wheel.BackgroundTransparency = 1
 			Wheel.Image = Icons.ColorWheel
 			Wheel.Active = true
@@ -748,7 +766,7 @@ function Veltrum:CreateWindow(config)
 				local distance = math.clamp(delta.Magnitude, 0, radius)
 				
 				local angle = math.atan2(delta.Y, delta.X)
-				local hue = (angle + math.pi) / (math.pi * 2)
+				local hue = (angle / (math.pi * 2)) % 1
 				local sat = distance / radius
 				local color = Color3.fromHSV(hue, sat, 1)
 
