@@ -26,7 +26,7 @@ local Icons = {
 	Close = "rbxassetid://4458805218",
 	CheckboxOff = "rbxassetid://4458801920",
 	CheckboxOn = "rbxassetid://4458804273",
-	ColorWheel = "rbxassetid://1003599924"
+	ColorWheel = "rbxassetid://1003599877"
 }
 
 local function GenId() return HttpService:GenerateGUID(false):gsub("-", "") end
